@@ -1,0 +1,36 @@
+name: Build POS Apps
+on:
+push:
+branches: [ main ]
+
+jobs:
+build:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v3
+- name: Setup Node.js
+uses: actions/setup-node@v3
+with:
+node-version: 18
+- name: Install
+run: npm install --force
+- name: Build
+run: npm run build
+- name: Build EXE
+run: npx electron-builder --win --portable
+env:
+GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+- name: Build APK
+run: |
+npm install @capacitor/android
+npx cap add android || true
+npx cap sync
+cd android
+./gradlew assembleDebug
+- name: Upload
+uses: actions/upload-artifact@v4
+with:
+name: POS-Installers
+path: |
+dist/*.exe
+android/app/build/outputs/apk/debug/app-debug.apk
