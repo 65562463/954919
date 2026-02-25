@@ -1,0 +1,45 @@
+name: Build APK and EXE
+on:
+  push:
+    branches: [ main ] # سيتم البناء في كل مرة ترفع فيها كوداً جديداً
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Project
+        run: npm run build
+
+      # بناء نسخة الويندوز (EXE)
+      - name: Build Windows EXE
+        run: npx electron-builder --win --portable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # بناء نسخة الأندرويد (APK)
+      - name: Setup Android Environment
+        run: npx cap add android && npx cap sync
+
+      - name: Build Android APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      # رفع الملفات النهائية للتحميل
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: POS-App-Packages
+          path: |
+            dist/*.exe
+            android/app/build/outputs/apk/debug/app-debug.apk
