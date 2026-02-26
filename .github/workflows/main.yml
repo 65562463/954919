@@ -15,20 +15,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Total Cleanup & Fresh Install
         run: |
-          # 1. حذف المجلدات التي قد تسبب تضارب (القادمة من الهاتف)
+          # تنظيف أي ملفات قديمة
           rm -rf node_modules android package-lock.json dist
           
-          # 2. إنشاء ملف المشروع من الصفر
+          # إنشاء المشروع وتثبيت الأدوات
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # 3. تجهيز مجلد الويب لكي لا ينهار Capacitor
+          # تجهيز مجلد الويب
           mkdir -p dist
           echo '<!DOCTYPE html><html><body>POS System Ready</body></html>' > dist/index.html
           
-          # 4. بناء مشروع أندرويد جديد ونظيف تماماً
+          # بناء الأندرويد
           npx cap init "MyPOS" "com.mypos.app" --web-dir dist
           npx cap add android
 
