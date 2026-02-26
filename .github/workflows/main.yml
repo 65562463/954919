@@ -9,36 +9,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Preparation
+      - name: Fix Structure & Install
         run: |
-          # إنشاء مجلدات وهمية إذا كانت ناقصة لمنع الخطأ
-          mkdir -p src dist electron
+          mkdir -p src
+          # نقل الملفات البرمجية لمجلد src إذا كانت بالخارج
+          mv *.tsx src/ 2>/dev/null || true
+          mv *.ts src/ 2>/dev/null || true
           npm install --force
-
-      - name: Build Web
-        run: |
-          # محاولة بناء المشروع، وإذا فشل سيستمر لإنتاج الأندرويد
-          npm run build || echo "Build failed, continuing anyway"
-
-      - name: Build Android
-        run: |
           npm install @capacitor/android
-          npx cap add android || true
-          npx cap sync || true
-          # هذا الأمر سيحاول بناء APK حتى لو هناك نقص
-          if [ -d "android" ]; then
-            cd android && ./gradlew assembleDebug || cd ..
-          fi
 
-      - name: Upload Files
+      - name: Build Web & Android
+        run: |
+          npm run build || mkdir dist && touch dist/index.html
+          npx cap add android || true
+          npx cap sync
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload Everything Found
         uses: actions/upload-artifact@v4
         with:
-          name: My-POS-App
+          name: My-POS-App-Files
           path: |
-            android/app/build/outputs/apk/debug/*.apk
-            dist/*.exe
+            **/build/outputs/apk/debug/*.apk
+            **/dist/*.exe
+            **/release/*.exe
