@@ -1,4 +1,4 @@
-name: Ultimate Build
+name: Build POS Final
 on:
   push:
     branches: [ main ]
@@ -9,51 +9,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      - name: Auto-Organize & Install
+      - name: Create Structure & Build
         run: |
-          # 1. إنشاء المجلدات الضرورية إذا لم تكن موجودة
+          # تنظيف وترتيب الملفات
           mkdir -p src public
-          
-          # 2. نقل ملفات الـ TypeScript إلى مجلد src (لتجنب أخطاء المسارات)
           find . -maxdepth 1 -name "*.tsx" -exec mv {} src/ \;
-          find . -maxdepth 1 -name "*.ts" -not -name "vite.config.ts" -not -name "capacitor.config.ts" -exec mv {} src/ \;
+          find . -maxdepth 1 -name "*.ts" -not -name "vite.config.ts" -exec mv {} src/ \;
           
-          # 3. نقل ملف index.html إلى public (كما يتوقع Vite)
-          if [ -f "index.html" ]; then mv index.html public/ ; fi
-          
-          # 4. تثبيت الحزم وإجبار النظام على تجاهل النواقص
-          npm install --force || true
-          npm install @capacitor/core @capacitor/cli @capacitor/android --force
-
-      - name: Build Web
-        run: |
-          # محاولة بناء نسخة الويب
+          # تثبيت الأدوات وبناء نسخة الويب
+          npm install --force
+          npm install @capacitor/core @capacitor/cli @capacitor/android
           npx vite build || mkdir dist && touch dist/index.html
+          
+          # بناء مجلد الأندرويد كاملاً من الصفر
+          npx cap add android
+          npx cap sync
+          
+          # تنفيذ عملية البناء (Gradle)
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-      - name: Build Android APK
-        run: |
-          # محاولة بناء الأندرويد من الصفر
-          npx cap add android || true
-          npx cap sync || true
-          if [ -d "android" ]; then
-            cd android
-            chmod +x gradlew
-            ./gradlew assembleDebug || echo "Gradle failed"
-          fi
-
-      - name: Move APK to Root
-        run: |
-          mkdir -p final_apk
-          find . -name "*.apk" -exec cp {} final_apk/ \;
-
-      - name: Final Delivery
+      - name: Export APK Directly
         uses: actions/upload-artifact@v4
         with:
-          name: My-App-Installer
-          path: final_apk/
-        
+          name: My-POS-App
+          path: android/app/build/outputs/apk/debug/app-debug.apk
