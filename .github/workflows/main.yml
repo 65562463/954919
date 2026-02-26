@@ -46,10 +46,14 @@ jobs:
             ./gradlew assembleDebug || echo "Gradle failed"
           fi
 
+      - name: Move APK to Root
+        run: |
+          mkdir -p final_apk
+          find . -name "*.apk" -exec cp {} final_apk/ \;
+
       - name: Final Delivery
         uses: actions/upload-artifact@v4
         with:
-          name: My-App-Package
-          path: |
-            **/app/build/outputs/apk/debug/*.apk
-            **/dist/*
+          name: My-App-Installer
+          path: final_apk/
+        
