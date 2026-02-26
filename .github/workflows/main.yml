@@ -1,4 +1,4 @@
-name: Build POS Standard
+name: Build POS Final Force
 on:
   push:
     branches: [ main ]
@@ -9,42 +9,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - name: Setup Node & Java
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Clean & Prepare
+      - name: Full Reconstruction
         run: |
-          # حذف أي مخلفات قديمة تعيق العمل
-          rm -rf node_modules android
-          
-          # إنشاء ملفات الإعداد من الصفر لضمان الجودة
-          echo '{"name":"pos-app","version":"1.0.0","dependencies":{}}' > package.json
+          # 1. إنشاء ملفات الهيكل الأساسي بالقوة
+          npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           
-          # إنشاء مجلد الويب الوهمي لبدء الربط
+          # 2. إنشاء مجلد الويب (بدونه يفشل الأندرويد)
           mkdir -p dist
-          echo '<html><body>POS Ready</body></html>' > dist/index.html
-
-      - name: Build Android Project
-        run: |
+          echo '<!DOCTYPE html><html><body>POS System Ready</body></html>' > dist/index.html
+          
+          # 3. تهيئة مشروع أندرويد جديد تماماً
           npx cap init "MyPOS" "com.mypos.app" --web-dir dist
           npx cap add android
-          npx cap sync
           
+          # 4. نقل أي ملفات برمجية رفعتها أنت للمكان الصحيح (إذا وُجدت)
+          mkdir -p src
+          find . -maxdepth 1 -name "*.tsx" -exec mv {} src/ \; || true
+          
+          # 5. مزامنة وبناء التطبيق
+          npx cap sync
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Deliver APK
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: Final-Android-App
+          name: My-Final-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
